@@ -1,0 +1,4 @@
+From: ms.ferrari@school.example
+Subject: Room booking form — due Friday
+
+Hi Ricardo, reminder that the room booking form for Code Club is due this Friday. Please also confirm roughly how many members to expect. Thanks! — Ms. Ferrari

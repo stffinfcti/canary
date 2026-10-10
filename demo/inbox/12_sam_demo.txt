@@ -1,0 +1,4 @@
+From: sam.g@student.school
+Subject: demo at meeting?
+
+finished my first godot game!! can i demo it at the meeting this week? it's like 5 mins tops
