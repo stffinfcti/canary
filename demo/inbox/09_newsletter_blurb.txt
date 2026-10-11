@@ -1,4 +1,4 @@
 From: newsletter@school.example
 Subject: Club spotlight blurb needed
 
-Hello! We're featuring Code Club in this month's newsletter. Could you send a 2–3 sentence blurb about the club by Wednesday?
+Hello! We're featuring Code Club in this month's newsletter. Could you send a 2-3 sentence blurb about the club by Wednesday?

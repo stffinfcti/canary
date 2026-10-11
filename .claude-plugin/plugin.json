@@ -1,6 +1,6 @@
 {
   "name": "canary",
-  "description": "Try a few first, then do the rest. Sample, approve, learn, roll out in waves, hold the odd ones.",
+  "description": "Do a task on a few items, review them, then let the agent finish the rest and hold back anything that doesn't match.",
   "version": "0.1.0",
-  "author": { "name": "Ricardo" }
+  "author": { "name": "stffinfcti" }
 }

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""canary — bookkeeping helper for the /canary skill.
+"""Bookkeeping for the /canary skill.
 
-Keeps score only. All judgment (sampling, drafting, learning rules,
-judging holds) is done by the agent following SKILL.md.
+Records decisions in .canary/ledger.jsonl and reports progress. The agent
+following SKILL.md makes every judgment call; this script never does.
 
-Run from the working root; state lives in ./.canary/
+Run it from the user's working folder. State lives in ./.canary/
 """
 import argparse
 import json
@@ -55,7 +55,7 @@ def cmd_list(args: argparse.Namespace) -> None:
     for i, f in enumerate(items, 1):
         name = f.relative_to(root).as_posix() if args.recursive else f.name
         print(f"{i:>3}  {name}  ({f.stat().st_size}b)  {_preview(f)}")
-    print(f"\n{len(items)} items — pick a varied sample, not the first N")
+    print(f"\n{len(items)} items")
 
 
 def cmd_record(args: argparse.Namespace) -> None:

@@ -1,101 +1,103 @@
-# 🐤 /canary — try a few first, then do the rest
+# /canary
+
+Try a few first, then do the rest.
 
 ```
 /canary 3 "draft replies to all of these"
 ```
 
-The AI does 3 items and **stops**. You approve or fix them. Your fixes become the rules. It finishes the rest in growing waves — and **holds back anything that doesn't look like what you approved.**
+The agent does 3 items and stops. You approve them or fix them, and your fixes get saved as rules. Then it does the rest in batches, and it skips anything that doesn't look like the samples you approved, with a short note saying why.
 
 ```
-🐤 canary done — 7 done · 2 held · 3 sampled
+🐤 canary done: 7 done · 2 held · 3 sampled
 held:
-  07_principal_openhouse.txt — formal note from your principal; your samples were casual, didn't want to guess.
-  11_riley_receipt.txt       — asks about reimbursement; your samples never touched money.
+  07_principal_openhouse.txt  formal note from your principal; your samples were casual, didn't want to guess.
+  11_riley_receipt.txt        asks about reimbursement; your samples never touched money.
 Run /canary resume to review held items.
 ```
 
-## The problem
+## Why
 
-Ask AI to do one task to many things — reply to 50 emails, fix 40 files, rename 300 photos — and you have two bad options: check all of them yourself (defeats the point), or trust it blindly (every item wrong the same way). Everyone already works around this by hand: *"do 3, show me, then do the rest."* /canary gives that habit a name and a handle.
+When you ask an AI to do the same thing to a lot of items (reply to 50 emails, fix 40 files, rename 300 photos), you either check every result yourself or you trust it and hope it understood you. If it didn't, every item comes out wrong in the same way.
+
+Most people already handle this by saying "do 3, show me, then do the rest." /canary turns that into a command, and adds the part people usually skip: it holds back the items your examples didn't cover instead of guessing.
 
 ## How it works
 
-1. **Sample** — picks N *varied* items (not the first N) and does them reversibly: drafts, not sent emails.
-2. **Approve or edit** — you fix the samples.
-3. **Learn** — your edits become explicit rules in `.canary/rules.md`.
-4. **Roll out in waves** — remaining items in growing batches, each output judged against your approved samples.
-5. **Hold the odd ones** — anything unlike your examples is skipped with a one-line reason.
-6. **Report** — done / held / why. `/canary resume` reviews the held items.
+1. Sample: picks N items that differ from each other (not just the first N) and does them in a way you can undo, like drafts instead of sent emails.
+2. Review: you approve or edit the samples.
+3. Learn: each edit becomes a one-line rule in `.canary/rules.md`.
+4. Batches: the remaining items run in growing batches, each checked against your approved samples and rules.
+5. Hold: anything that doesn't match is left alone, with a one-line reason.
+6. Report: what got done, what got held, and why. `/canary resume` walks through the held items.
 
-## Not just email
+## Code works too
 
 ```
 /canary 3 "add error handling to every route in src/api"
 ```
 
-It works on a git branch, shows 3 varied routes as diffs, and stops. You reply *"use logError(), not console.error. then go"* — that becomes a rule in `.canary/rules.md`, applied to the other 21 routes. `src/api/legacy/payments.js` is held: it uses callbacks, and none of your samples covered that.
+The agent switches to a new git branch, shows 3 different routes as diffs, and stops. You reply "use logError(), not console.error. then go". That becomes a rule and gets applied to the other 21 routes. `src/api/legacy/payments.js` is held because it uses callbacks and none of your samples did.
 
-Same verb, any batch: rename 300 photos (holds the screenshots), format 40 citations (holds sources with no author), normalize 500 spreadsheet rows (holds cells with two dates).
+Other things it's useful for: renaming 300 photos (holds the screenshots), formatting 40 citations (holds sources with no author), cleaning up 500 spreadsheet rows (holds cells with two dates in them).
 
-## Why it's not just few-shot prompting
+## How this differs from giving examples
 
-Few-shot gives examples. /canary **stops for approval**, turns your *edits* into diff-able rules, ships in waves — and **quarantines outliers** with reasons instead of guessing. The hold-back is the feature: it's what makes the other 40 items safe to automate.
+Showing an AI a few examples helps, but it still runs everything in one go and fills gaps with guesses. /canary stops for your review, writes your edits down as rules you can read and change, runs in batches, and holds the items it isn't sure about.
 
 ## Install
 
-It's one folder — `skills/canary/` — in the open Agent Skills format. No dependencies beyond Python 3.
+The skill is one folder, `skills/canary/`, in the Agent Skills format. It needs Python 3.9 or newer and nothing else.
 
 | Agent | Setup |
 |---|---|
-| Claude Code | `/plugin marketplace add stffinfcti/canary` then `/plugin install canary@canary` — or copy `skills/canary/` into `~/.claude/skills/` |
-| Devin | copy `skills/canary/` into `.devin/skills/` (project) or `~/.config/devin/skills/` (global) |
-| Codex / other agents | copy `skills/canary/` into your agent's skills dir (`.agents/skills/` works for many) |
-| No skill support | paste `SKILL.md` into the chat; the agent runs `scripts/canary.py` for bookkeeping |
+| Claude Code | `/plugin marketplace add stffinfcti/canary`, then `/plugin install canary@canary`. Or copy `skills/canary/` into `~/.claude/skills/`. |
+| Devin | Copy `skills/canary/` into `.devin/skills/` (one project) or `~/.config/devin/skills/` (all projects). |
+| Codex and others | Copy `skills/canary/` into your agent's skills folder. `.agents/skills/` works for many. |
+| No skill support | Paste `SKILL.md` into the chat. The agent can still run `scripts/canary.py`. |
 
-As a Claude Code plugin the command is namespaced (`/canary:canary`); installed as a plain skill it's `/canary`.
+Installed as a Claude Code plugin, the command is `/canary:canary`. Installed as a plain skill, it's `/canary`.
 
-## 60-second demo
+## Try it
 
-```bash
-cd canary                       # this repo
-# open your agent here, then:
-
-/canary 3 "draft replies to everything in demo/inbox — keep them short and casual, sign off – Ricardo"
-```
-
-1. It drafts 3 varied emails into `.canary/outbox/` and stops.
-2. Edit one draft — e.g. fix the sign-off. Say "go."
-3. It drafts the rest in your style, then reports: **7 done · 2 held** — the principal's formal request and a reimbursement question, each with a one-line reason.
-4. `/canary resume` to review the held ones.
-
-## Architecture
+Open your agent in this repo and run:
 
 ```
-canary/
-├── .claude-plugin/
-│   ├── plugin.json              # Claude Code plugin manifest
-│   └── marketplace.json         # lets this repo be added as a marketplace
-├── skills/canary/
-│   ├── SKILL.md                 # the protocol — the whole idea lives here
-│   └── scripts/canary.py        # bookkeeping: ledger, waves, holds (stdlib only)
-├── demo/inbox/                  # 12 club emails, 2 engineered to be held
-└── tests/                       # CLI tests
+/canary 3 "draft replies to everything in demo/inbox, keep them short and casual, sign off – Ricardo"
 ```
 
-State lives in `.canary/` next to your work: `golden/` (approved samples), `rules.md` (learned rules), `held/` (reasons for each held item), `outbox/` (drafts), `ledger.jsonl` (every decision — an audit trail). The script keeps score; the agent does all judgment — so the skill ports to any agent that can read a markdown file.
+1. It drafts 3 replies into `.canary/outbox/` and stops.
+2. Edit one if you want (the sign-off, say), then reply "go".
+3. It drafts the other 9 and reports 7 done and 2 held: the principal's formal invitation and a question about getting reimbursed.
+4. Run `/canary resume` to deal with those two.
+
+## Layout
+
+```
+.claude-plugin/
+  plugin.json          Claude Code plugin manifest
+  marketplace.json     lets Claude Code install from this repo
+skills/canary/
+  SKILL.md             instructions the agent follows
+  scripts/canary.py    keeps the ledger (standard library only)
+demo/inbox/            12 club emails for the demo; 2 of them should get held
+tests/                 tests for canary.py
+```
+
+While it runs, state goes in `.canary/` in your working folder: `golden/` (approved samples), `rules.md` (rules from your edits), `held/` (a reason file per held item), `outbox/` (drafts), and `ledger.jsonl` (a log of every decision). The script only does bookkeeping. The agent makes every judgment call, which is why the skill works in any agent that can read a markdown file.
 
 ```
 canary.py init
-canary.py list <dir> [-r]                      # -r for code: nested files, skips .git / node_modules
+canary.py list <dir> [-r]                  # -r includes subfolders, skipping .git, node_modules, etc.
 canary.py record <item> <sampled|done|approved|held|rejected> [--wave K] [--reason "..."]
-canary.py status [--total T] [--waves W]       # 🐤 8 done of 40 · 1 held · 3 sampled · 0 rejected · wave 2/3
+canary.py status [--total T] [--waves W]   # 🐤 8 done of 40 · 1 held · 3 sampled · 0 rejected · wave 2/3
 canary.py held
 ```
 
-Run the tests with `python3 -m unittest discover -s tests` (Python 3.9+, no dependencies).
+Tests: `python3 -m unittest discover -s tests`
 
-## Roadmap
+## Next
 
-Gmail drafts adapter, wave-size tuning, confidence thresholds for the judge pass, `/canary undo` for a whole run.
+A Gmail drafts adapter, smarter batch sizes, and a way to undo a whole run.
 
-Built at EvoHacks 2026 — theme: *AI for Automation*. /canary automates the part of automation nobody trusts.
+Built for EvoHacks 2026 (theme: AI for Automation).

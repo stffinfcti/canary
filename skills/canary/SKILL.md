@@ -1,6 +1,6 @@
 ---
 name: canary
-description: Apply one task to many items safely — sample a few, learn the user's edits, roll out in waves, hold the odd ones.
+description: Do one task across many items safely. Sample a few, learn from the user's edits, finish the rest in batches, and hold back items that don't match.
 argument-hint: "[N] \"task\" | resume"
 allowed-tools:
   - read
@@ -13,91 +13,93 @@ triggers:
   - model
 ---
 
-# /canary — try a few first, then do the rest
+# /canary
 
-`/canary N "task"` means: do N items and stop, let the user approve or fix them, turn their fixes into rules, finish the rest in growing waves, and hold back anything that doesn't look like what they approved.
+`/canary N "task"`: do the task on N items and stop. Let the user approve or fix them, save their fixes as rules, finish the remaining items in growing batches, and hold back any item that doesn't fit what they approved.
 
 ## Invocation
 
-`/canary [N] "task over <collection>"` — N defaults to 3. The collection is a folder, list, or set the user names.
-`/canary resume` — review held items after a run.
+- `/canary [N] "task over <collection>"`. N defaults to 3. The collection is a folder, a list, or any set of items the user names.
+- `/canary resume` reviews held items after a run.
 
 ## State
 
-All state lives in a `.canary/` folder at the working root:
+Everything goes in `.canary/` in the user's working folder:
 
-- `ledger.jsonl` — one record per item: `{item, status, wave, reason}`
-- `golden/` — the user's approved sample outputs. This is the spec.
-- `rules.md` — rules learned from user edits, one per line, each citing the edit it came from
-- `held/` — skipped items, each with a matching `*.reason.md`
-- `outbox/` — draft outputs for non-code tasks
+- `ledger.jsonl`: one line per decision, `{item, status, wave, reason}`
+- `golden/`: final versions of the approved samples
+- `rules.md`: one rule per line, each noting which edit it came from
+- `held/`: one `<item>.reason.md` per held item
+- `outbox/`: drafts for anything that isn't code
 
-Use the bundled `scripts/canary.py` (in `scripts/` next to this SKILL.md; stdlib only, run it with the user's working root as cwd) for bookkeeping. The script keeps score; you do all judgment.
+`scripts/canary.py` (next to this file, standard library only) does the bookkeeping. Run it with the user's working folder as the current directory. It only records what happened; you make every judgment call.
 
 | Command | Use |
 |---|---|
 | `canary.py init` | create `.canary/` |
-| `canary.py list <dir> [-r]` | list the collection; `-r` for nested folders (code), skips `.git`, `node_modules`, etc. |
+| `canary.py list <dir> [-r]` | list the collection; `-r` includes subfolders and skips `.git`, `node_modules`, etc. |
 | `canary.py record <item> <sampled\|done\|approved\|held\|rejected> [--wave K] [--reason "..."]` | log a decision |
-| `canary.py status [--total T] [--waves W]` | progress ticker |
-| `canary.py held` | held items with reasons |
+| `canary.py status [--total T] [--waves W]` | print progress |
+| `canary.py held` | list held items and reasons |
 
-## Stay reversible
+## Keep it undoable
 
-Nothing irreversible until the user approves the result.
+Don't do anything permanent until the user has approved the result.
 
-- **Text / documents / messages:** write outputs to `.canary/outbox/`, never send or overwrite originals.
-- **Code in a git repo:** work on a branch (`git switch -c canary/<short-task>`), edit files in place there, and show samples as diffs. Never commit to the user's current branch or push.
-- **Renames / moves:** write the plan (`old → new`) to `.canary/outbox/plan.txt` and apply it only after the final report is approved.
+- Text, documents, messages: write to `.canary/outbox/`. Don't send anything or overwrite originals.
+- Code in a git repo: create a branch (`git switch -c canary/<short-task>`), edit files there, and show samples as diffs. Don't commit to the user's current branch and don't push.
+- Renames and moves: write the plan (`old → new`) to `.canary/outbox/plan.txt` and apply it only after the user approves the final report.
 
-## Protocol
+## Steps
 
 ### 1. Sample
 
-- Run `canary.py init`, then `canary.py list <collection>` (add `-r` for code).
-- Pick N items that are *varied* — different senders, lengths, file types, or patterns — never the first N.
-- Do the task on exactly those N, reversibly (see above).
-- `canary.py record <item> sampled` for each.
+- Run `canary.py init`, then `canary.py list <collection>` (with `-r` for code).
+- Pick N items that differ from each other in sender, length, file type, or pattern. Don't take the first N.
+- Do the task on those N items only.
+- Run `canary.py record <item> sampled` for each.
 
-### 2. Stop and show
+### 2. Stop
 
-Present the N outputs compactly. Say: **"Fix any of these or say 'go'."**
-Do not touch the remaining items until the user responds. This stop is the entire point.
+Show the N results briefly and ask: "Fix any of these or say 'go'."
+Don't start on the other items until the user answers.
 
 ### 3. Learn
 
-For each user correction, extract a rule — one line, in the user's voice — and append it to `rules.md` citing the edit it came from, e.g. `- use logError(), never console.error  (your edit to users.js)`. Apply the correction to the sample itself, copy the final version of every sample into `golden/`, and `record <item> approved`. Golden samples + rules are now the spec; the original instruction is subordinate to them.
+For each correction, write a one-line rule to `rules.md` in the user's words and note which edit it came from, for example `- use logError(), never console.error  (your edit to users.js)`. Apply the correction to the sample, copy every final sample into `golden/`, and run `record <item> approved`. From here on, the golden samples and rules take priority over the original instruction.
 
-If the user says "go" with no edits, approve the samples as-is — `rules.md` stays empty, and that's fine.
+If the user says "go" without editing anything, approve the samples as they are. `rules.md` can stay empty.
 
-### 4. Roll out in waves
+### 4. Run in batches
 
-Process the remaining items in waves of roughly 2N, then 4N, then the rest (cap ~25 per wave). After finishing each item, `record <item> done --wave K`. After every wave print the ticker with `canary.py status --total <collection size> --waves <planned waves>`: `🐤 8 done of 40 · 1 held · 3 sampled · 0 rejected · wave 2/3`.
+Do the remaining items in batches of about 2N, then 4N, then the rest, with at most about 25 per batch. After each item, run `record <item> done --wave K`. After each batch, show progress with `canary.py status --total <collection size> --waves <planned batches>`.
 
-### 5. Judge pass
+### 5. Decide what to hold
 
-Before writing output for an item, compare it against the golden samples and rules. **Hold the item instead of producing output** if any of these apply:
+Before doing an item, compare it to the golden samples and rules. Hold it instead if any of these are true:
 
-- The item is a different *kind* than every approved sample — different recipient type, formality level, or stakes.
-- Doing it well needs facts or judgment the samples never established — money, dates, commitments, approvals.
-- A rule in `rules.md` would be violated, or the item clearly needs an exception to one.
+- It's a different kind of item from every approved sample: a different type of recipient, level of formality, or level of stakes.
+- Doing it well needs facts or decisions the samples never covered, such as money, dates, commitments, or approvals.
+- It would break a rule in `rules.md`, or clearly needs an exception to one.
 
-Leave the item untouched (for code: don't edit the file) and write `held/<item>.reason.md` — one line: *"I held this because ___. Approve, edit, or discard with /canary resume."* — and `record <item> held --reason "..."`. When unsure, hold: a hold is a question, a bad output is a broken promise.
+Leave a held item unchanged (for code, don't edit the file). Write `held/<item>.reason.md` with one line: "I held this because ___. Approve, edit, or discard with /canary resume." Then run `record <item> held --reason "..."`. If you're unsure, hold it; the user can approve it in seconds, but a wrong result can slip through unnoticed.
 
 ### 6. Report
 
 ```
-🐤 canary done — 37 done · 2 held · 3 sampled
+🐤 canary done: 37 done · 2 held · 3 sampled
 held:
-  07_principal.txt — formal note from your principal; your samples were casual, didn't want to guess.
-  11_receipt.txt   — asks about reimbursement; your samples never touched money.
+  07_principal.txt  formal note from your principal; your samples were casual, didn't want to guess.
+  11_receipt.txt    asks about reimbursement; your samples never touched money.
 Run /canary resume to review held items.
 ```
 
 ## /canary resume
 
-Run `canary.py held` and list the items with their reasons. For each, the user can approve your best attempt (`record <item> done`), give guidance (extract a new rule into `rules.md`, redo the item, then `record <item> done`), or discard it (`record <item> rejected`). Ask about each held item; don't batch-approve silently.
+Run `canary.py held` and show each item with its reason. For each one the user can:
 
-## What this is not
+- approve your best attempt: do it, then `record <item> done`
+- give guidance: add a rule to `rules.md`, do the item, then `record <item> done`
+- skip it: `record <item> rejected`
 
-Not few-shot prompting: examples alone don't quarantine outliers, don't turn edits into explicit reusable rules, and don't stop for approval. The hold-back is the feature — it is what makes the other 40 items safe to automate.
+Ask about each item separately. Don't approve them in bulk.
