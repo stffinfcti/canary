@@ -2,6 +2,8 @@
 
 Try a few first, then do the rest.
 
+Demo video: [media/demo.mp4](media/demo.mp4) (2 min)
+
 ```
 /canary 3 "draft replies to all of these"
 ```
