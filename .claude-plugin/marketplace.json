@@ -1,0 +1,12 @@
+{
+  "name": "canary",
+  "description": "Try a few first, then do the rest.",
+  "owner": { "name": "stffinfcti" },
+  "plugins": [
+    {
+      "name": "canary",
+      "source": "./",
+      "description": "Sample a few items, learn your edits as rules, roll out in waves, hold the odd ones."
+    }
+  ]
+}
